@@ -14,7 +14,7 @@ func (t *Telegram) handleStart(ctx tb.Context) error {
 		return nil
 	}
 
-	t.send(m.Chat, "enyaki gay")
+	t.send(m.Chat, "Agrega el bot al grupo que quieras como administrador y envía un enlace de Wallapop para obtener información sobre el producto")
 
 	return nil
 }
@@ -50,11 +50,10 @@ func (t *Telegram) handleQuery(ctx tb.Context) error {
 		r.Inline(r.Row(r.URL("Ver en Wallapop", url)))
 		log.Info().Str("module", "telegram").Interface("product", product).Msg("product fetched")
 		result := &tb.ArticleResult{
-			ThumbURL:    product.Image,
+			ThumbURL:    product.Images[0],
 			Title:       product.Name,
 			Description: product.Desc,
 			Text:        product.String(),
-			URL:         product.Image,
 			ResultBase: tb.ResultBase{
 				ParseMode:   tb.ModeHTML,
 				ReplyMarkup: r,
@@ -71,6 +70,11 @@ func (t *Telegram) handleQuery(ctx tb.Context) error {
 
 // handleText triggers when a text message is sent
 func (t *Telegram) handleText(ctx tb.Context) error {
+	// Ignore own messages
+	if ctx.Sender().ID == t.bot.Me.ID {
+		return nil
+	}
+
 	m := ctx.Message()
 	if m.Private() {
 		t.send(m.Chat, "Este bot solo funciona en grupos")
@@ -81,16 +85,40 @@ func (t *Telegram) handleText(ctx tb.Context) error {
 		product, err := NewProduct(url)
 		if err != nil {
 			log.Error().Str("module", "telegram").Err(err).Msg("error fetching product")
-			t.send(m.Chat, "Error al obtener el producto")
+			ctx.Reply("Error al obtener el producto")
 			return err
 		}
-		ctx.Delete()
+
+		canDelete := true
+		err = ctx.Delete()
+		if err != nil {
+			canDelete = false
+			log.Error().Str("module", "telegram").Err(err).Msg("error deleting message")
+		}
 
 		msg := product.String()
 		msg += fmt.Sprintf("🙋🏻‍♂️ <b>Contacta con el vendedor:</b> %s", getUser(ctx.Sender()))
-		t.send(m.Chat, msg, tb.ModeHTML)
-	} else {
-		t.send(m.Chat, "URL inválida")
+		album := tb.Album{}
+		for i, img := range product.Images {
+			if i == 0 {
+				album = append(album, &tb.Photo{File: tb.FromURL(img), Caption: msg})
+			} else {
+				album = append(album, &tb.Photo{File: tb.FromURL(img)})
+			}
+		}
+
+		opts := tb.SendOptions{
+			ParseMode:             tb.ModeHTML,
+			DisableWebPagePreview: true,
+		}
+		if m.ReplyTo != nil {
+			opts.ReplyTo = m.ReplyTo
+		}
+
+		if !canDelete {
+			opts.ReplyTo = m
+		}
+		t.bot.SendAlbum(m.Chat, album, &opts)
 	}
 	return nil
 }
