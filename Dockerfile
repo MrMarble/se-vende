@@ -7,5 +7,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o se-vende .
 
 FROM scratch
+RUN apk --no-cache add tzdata ca-certificates
+WORKDIR /bot/
 COPY --from=builder /source/se-vende .
 CMD ["./se-vende"]
