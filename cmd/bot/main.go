@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	sevende "gihub.com/mrmarble/se-vende"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -25,7 +26,7 @@ func main() {
 		log.Fatal().Str("module", "main").Str("envvar", "TG_TOKEN").Msg("missing environment variable")
 	}
 
-	bot, err := NewBot(os.Getenv("TG_TOKEN"))
+	bot, err := sevende.NewBot(os.Getenv("TG_TOKEN"))
 	if err != nil {
 		log.Fatal().Str("module", "telegram").Err(err).Msg("failed bot instantiaion")
 	}

@@ -1,8 +1,9 @@
-package main
+package sevende
 
 import (
 	"fmt"
 
+	"gihub.com/mrmarble/se-vende/providers"
 	"github.com/rs/zerolog/log"
 	tb "gopkg.in/telebot.v3"
 )
@@ -27,7 +28,7 @@ func (t *Telegram) handleQuery(ctx tb.Context) error {
 	log.Info().Str("module", "telegram").Str("url", ctx.Query().Text).Msg("query received")
 	results := make(tb.Results, 1)
 
-	if url := hasValidURL(ctx.Query().Text); url == "" {
+	if url := providers.GetURL(ctx.Query().Text); url == "" {
 		results[0] = &tb.ArticleResult{
 			Title:       "Error",
 			Text:        "URL inválida",
@@ -81,7 +82,7 @@ func (t *Telegram) handleText(ctx tb.Context) error {
 		return nil
 	}
 
-	if url := hasValidURL(m.Text); url != "" {
+	if url := providers.GetURL(m.Text); url != "" {
 		product, err := NewProduct(url)
 		if err != nil {
 			log.Error().Str("module", "telegram").Err(err).Msg("error fetching product")
