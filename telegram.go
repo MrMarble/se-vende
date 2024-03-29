@@ -98,7 +98,7 @@ func getUser(u *tb.User) string {
 	if u.Username != "" {
 		output += " (@" + u.Username + ")"
 	} else {
-		output += fmt.Sprintf(" (tg://user?id=%d)", u.ID)
+		output = fmt.Sprintf("<a href='tg://user?id=%d'>%s</a>", u.ID, output)
 	}
 
 	return output
