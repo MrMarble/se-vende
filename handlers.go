@@ -14,7 +14,7 @@ func (t *Telegram) handleStart(ctx tb.Context) error {
 	if !m.Private() {
 		return nil
 	}
-
+	log.Info().Str("module", "telegram").Str("user", getUser(ctx.Sender())).Msg("start command received")
 	t.send(m.Chat, "Agrega el bot al grupo que quieras como administrador y envía un enlace de Wallapop para obtener información sobre el producto")
 
 	return nil
@@ -79,13 +79,15 @@ func (t *Telegram) handleText(ctx tb.Context) error {
 	m := ctx.Message()
 	if m.Private() {
 		t.send(m.Chat, "Este bot solo funciona en grupos")
+		log.Info().Str("module", "telegram").Int64("user", ctx.Sender().ID).Str("message", m.Text).Msg("private message received")
 		return nil
 	}
 
 	if url := providers.GetURL(m.Text); url != "" {
+		log.Info().Str("module", "telegram").Int64("user", ctx.Sender().ID).Int64("group", ctx.Chat().ID).Str("message", url).Msg("group message received")
 		product, err := NewProduct(url)
 		if err != nil {
-			log.Error().Str("module", "telegram").Err(err).Msg("error fetching product")
+			log.Error().Str("module", "telegram").Int64("user", ctx.Sender().ID).Int64("group", ctx.Chat().ID).Err(err).Msg("error fetching product")
 			ctx.Reply("Error al obtener el producto")
 			return err
 		}
@@ -94,7 +96,7 @@ func (t *Telegram) handleText(ctx tb.Context) error {
 		err = ctx.Delete()
 		if err != nil {
 			canDelete = false
-			log.Error().Str("module", "telegram").Err(err).Msg("error deleting message")
+			log.Error().Str("module", "telegram").Int64("user", ctx.Sender().ID).Int64("group", ctx.Chat().ID).Err(err).Msg("error deleting message")
 		}
 
 		msg := product.String()
